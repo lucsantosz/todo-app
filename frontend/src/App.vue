@@ -1,47 +1,30 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
+import { onMounted, ref } from 'vue'
+import { categoriesApi } from './api'
+import type { Category } from './types'
+import CategoryManager from './components/CategoryManager.vue'
+
+const categories = ref<Category[]>([])
+const loading = ref(true)
+const loadError = ref('')
+
+async function loadCategories() {
+  try {
+    categories.value = await categoriesApi.list()
+    loadError.value = ''
+  } catch {
+    loadError.value = 'Não foi possível carregar as categorias. O servidor Rails está rodando?'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadCategories)
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
-
-  <main>
-    <TheWelcome />
-  </main>
+  <h1>To-Do List</h1>
+  <p v-if="loadError" class="error">{{ loadError }}</p>
+  <p v-else-if="loading" class="muted">Carregando...</p>
+  <CategoryManager v-else :categories="categories" @changed="loadCategories" />
 </template>
-
-<style scoped>
-header {
-  line-height: 1.5;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-}
-</style>
