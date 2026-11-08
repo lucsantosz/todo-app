@@ -44,7 +44,7 @@ async function submit() {
 </script>
 
 <template>
-  <form class="card" @submit.prevent="submit">
+  <form class="modal" @submit.prevent="submit">
     <h2>{{ task ? 'Editar tarefa' : 'Nova tarefa' }}</h2>
 
     <div class="field">
@@ -92,8 +92,10 @@ async function submit() {
     </ul>
 
     <div class="row">
-      <button type="submit" :disabled="saving">{{ task ? 'Salvar alterações' : 'Criar tarefa' }}</button>
-      <button type="button" class="secondary" @click="emit('cancel')">Cancelar</button>
+      <button type="submit" class="primary" :disabled="saving">
+        {{ task ? 'Salvar alterações' : 'Criar tarefa' }}
+      </button>
+      <button type="button" @click="emit('cancel')">Cancelar</button>
     </div>
   </form>
 </template>
