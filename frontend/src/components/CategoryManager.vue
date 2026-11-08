@@ -1,15 +1,20 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { ApiError, categoriesApi } from '../api'
-import type { Category } from '../types'
+import { categoryColor } from '../colors'
+import type { Category, Task } from '../types'
 
-defineProps<{ categories: Category[] }>()
+const props = defineProps<{ categories: Category[]; allTasks: Task[] }>()
 const emit = defineEmits<{ changed: [] }>()
 
 const newName = ref('')
 const editingId = ref<number | null>(null)
 const editingName = ref('')
 const errors = ref<string[]>([])
+
+function countFor(categoryId: number) {
+  return props.allTasks.filter((task) => task.category_id === categoryId).length
+}
 
 function showError(error: unknown) {
   errors.value = error instanceof ApiError ? error.errors : ['Algo deu errado. Tente novamente.']
@@ -57,12 +62,17 @@ async function remove(category: Category) {
 </script>
 
 <template>
-  <section class="card">
-    <h2>Categorias</h2>
+  <header class="page-header">
+    <div>
+      <h1>Categorias</h1>
+      <p class="muted">Agrupe suas tarefas por assunto.</p>
+    </div>
+  </header>
 
+  <section class="panel">
     <form class="row" @submit.prevent="create">
-      <input v-model="newName" placeholder="Nome da nova categoria" />
-      <button type="submit">Adicionar</button>
+      <input v-model="newName" class="fill" placeholder="Nome da nova categoria" />
+      <button type="submit" class="primary">Adicionar</button>
     </form>
 
     <ul v-if="errors.length" class="errors">
@@ -71,17 +81,19 @@ async function remove(category: Category) {
 
     <p v-if="!categories.length" class="muted">Nenhuma categoria ainda. Crie a primeira acima.</p>
 
-    <ul class="list">
-      <li v-for="category in categories" :key="category.id" class="row">
+    <ul>
+      <li v-for="category in categories" :key="category.id" class="category-row">
         <template v-if="editingId === category.id">
-          <input v-model="editingName" @keyup.enter="saveEdit(category.id)" />
-          <button type="button" @click="saveEdit(category.id)">Salvar</button>
-          <button type="button" class="secondary" @click="editingId = null">Cancelar</button>
+          <input v-model="editingName" class="fill" @keyup.enter="saveEdit(category.id)" />
+          <button type="button" class="small primary" @click="saveEdit(category.id)">Salvar</button>
+          <button type="button" class="small" @click="editingId = null">Cancelar</button>
         </template>
         <template v-else>
-          <span class="grow">{{ category.name }}</span>
-          <button type="button" class="secondary" @click="startEdit(category)">Editar</button>
-          <button type="button" class="danger" @click="remove(category)">Excluir</button>
+          <span class="dot" :style="{ background: categoryColor(category.id) }"></span>
+          <span class="fill">{{ category.name }}</span>
+          <span class="muted">{{ countFor(category.id) }} tarefa(s)</span>
+          <button type="button" class="small" @click="startEdit(category)">Editar</button>
+          <button type="button" class="small danger" @click="remove(category)">Excluir</button>
         </template>
       </li>
     </ul>

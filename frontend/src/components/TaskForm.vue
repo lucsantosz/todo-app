@@ -16,11 +16,32 @@ const form = reactive<TaskInput>({
   category_id: props.task?.category_id ?? props.categories[0]?.id ?? null,
 })
 
+const dueInput = ref<HTMLInputElement | null>(null)
 const errors = ref<string[]>([])
 const saving = ref(false)
 
+function validateDueDate() {
+  if (dueInput.value?.validity.badInput) {
+    return 'Data de vencimento inválida. Corrija ou deixe em branco.'
+  }
+
+  if (form.due_date) {
+    const year = Number(form.due_date.slice(0, 4))
+    if (year < 2000 || year > 2100) return 'O ano do vencimento deve estar entre 2000 e 2100.'
+  }
+
+  return null
+}
+
 async function submit() {
+  const dateError = validateDueDate()
+  if (dateError) {
+    errors.value = [dateError]
+    return
+  }
+
   saving.value = true
+  errors.value = []
 
   const payload: TaskInput = {
     ...form,
@@ -44,7 +65,7 @@ async function submit() {
 </script>
 
 <template>
-  <form class="card" @submit.prevent="submit">
+  <form class="modal" @submit.prevent="submit">
     <h2>{{ task ? 'Editar tarefa' : 'Nova tarefa' }}</h2>
 
     <div class="field">
@@ -82,8 +103,15 @@ async function submit() {
       </div>
 
       <div class="field">
-        <label for="due_date">Vencimento</label>
-        <input id="due_date" v-model="form.due_date" type="date" />
+        <label for="due_date">Vencimento (opcional)</label>
+        <input
+          id="due_date"
+          ref="dueInput"
+          v-model="form.due_date"
+          type="date"
+          min="2000-01-01"
+          max="2100-12-31"
+        />
       </div>
     </div>
 
@@ -92,8 +120,10 @@ async function submit() {
     </ul>
 
     <div class="row">
-      <button type="submit" :disabled="saving">{{ task ? 'Salvar alterações' : 'Criar tarefa' }}</button>
-      <button type="button" class="secondary" @click="emit('cancel')">Cancelar</button>
+      <button type="submit" class="primary" :disabled="saving">
+        {{ task ? 'Salvar alterações' : 'Criar tarefa' }}
+      </button>
+      <button type="button" @click="emit('cancel')">Cancelar</button>
     </div>
   </form>
 </template>
