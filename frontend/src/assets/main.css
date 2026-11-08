@@ -46,3 +46,18 @@ button {
 }
 button.secondary { background: #e5e7eb; color: #1f2933; }
 button.danger { background: #dc2626; }
+
+.filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.filters select { flex: 1; min-width: 160px; }
+
+.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.field input, .field select, .field textarea { width: 100%; flex: none; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+
+.task p { margin: 4px 0 8px; }
+.meta { flex-wrap: wrap; margin-bottom: 0; }
+.badge { background: #e5e7eb; border-radius: 999px; padding: 2px 10px; font-size: 0.85rem; }
+.badge.overdue { background: #fee2e2; color: #b42318; }
+
+button:disabled { opacity: 0.5; cursor: not-allowed; }

@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { categoriesApi } from './api'
 import type { Category } from './types'
 import CategoryManager from './components/CategoryManager.vue'
+import TaskManager from './components/TaskManager.vue'
 
 const categories = ref<Category[]>([])
 const loading = ref(true)
@@ -26,5 +27,8 @@ onMounted(loadCategories)
   <h1>To-Do List</h1>
   <p v-if="loadError" class="error">{{ loadError }}</p>
   <p v-else-if="loading" class="muted">Carregando...</p>
-  <CategoryManager v-else :categories="categories" @changed="loadCategories" />
+  <template v-else>
+    <TaskManager :categories="categories" />
+    <CategoryManager :categories="categories" @changed="loadCategories" />
+  </template>
 </template>
