@@ -1,17 +1,13 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+write_report:
+  title: Escrever relatório
+  description: Relatório mensal
+  status: pending
+  priority: high
+  due_date: 2026-11-15
+  category: work
 
-one:
-  title: MyString
-  description: MyText
-  status: 1
-  priority: 1
-  due_date: 2026-11-08
-  category: one
-
-two:
-  title: MyString
-  description: MyText
-  status: 1
-  priority: 1
-  due_date: 2026-11-08
-  category: two
+study_rails:
+  title: Estudar Rails
+  status: in_progress
+  priority: medium
+  category: study
