@@ -1,4 +1,4 @@
-const palette = ['#a78bfa', '#60a5fa', '#4ade80', '#fb923c', '#f472b6', '#facc15', '#2dd4bf', '#f87171']
+const palette = ['#2dd4bf', '#f59e0b', '#fb7185', '#a3e635', '#f97316', '#94a3b8', '#facc15', '#4ade80']
 
 export function categoryColor(id: number) {
   return palette[id % palette.length]

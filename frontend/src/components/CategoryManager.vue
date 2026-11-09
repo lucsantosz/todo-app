@@ -1,101 +1,193 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ApiError, categoriesApi } from '../api'
-import { categoryColor } from '../colors'
 import type { Category, Task } from '../types'
+import CategoryCard from './CategoryCard.vue'
 
 const props = defineProps<{ categories: Category[]; allTasks: Task[] }>()
 const emit = defineEmits<{ changed: [] }>()
 
 const newName = ref('')
-const editingId = ref<number | null>(null)
-const editingName = ref('')
-const errors = ref<string[]>([])
+const createErrors = ref<string[]>([])
 
-function countFor(categoryId: number) {
-  return props.allTasks.filter((task) => task.category_id === categoryId).length
+const editing = ref<Category | null>(null)
+const editName = ref('')
+const editErrors = ref<string[]>([])
+
+const deleting = ref<Category | null>(null)
+const confirmText = ref('')
+const deleteError = ref('')
+
+const busy = ref(false)
+
+function errorsFrom(error: unknown) {
+  return error instanceof ApiError ? error.errors : ['Algo deu errado. Tente novamente.']
 }
 
-function showError(error: unknown) {
-  errors.value = error instanceof ApiError ? error.errors : ['Algo deu errado. Tente novamente.']
+function tasksOf(categoryId: number) {
+  return props.allTasks.filter((task) => task.category_id === categoryId)
 }
+
+function doneOf(categoryId: number) {
+  return tasksOf(categoryId).filter((task) => task.status === 'done').length
+}
+
+const deletingCount = computed(() => (deleting.value ? tasksOf(deleting.value.id).length : 0))
+
+const canDelete = computed(() => {
+  if (!deleting.value) return false
+  if (deletingCount.value === 0) return true
+  return confirmText.value.trim().toLowerCase() === deleting.value.name.trim().toLowerCase()
+})
 
 async function create() {
+  busy.value = true
+
   try {
     await categoriesApi.create(newName.value.trim())
     newName.value = ''
-    errors.value = []
+    createErrors.value = []
     emit('changed')
   } catch (error) {
-    showError(error)
+    createErrors.value = errorsFrom(error)
+  } finally {
+    busy.value = false
   }
 }
 
-function startEdit(category: Category) {
-  editingId.value = category.id
-  editingName.value = category.name
-  errors.value = []
+function openEdit(category: Category) {
+  editing.value = category
+  editName.value = category.name
+  editErrors.value = []
 }
 
-async function saveEdit(id: number) {
-  try {
-    await categoriesApi.update(id, editingName.value.trim())
-    editingId.value = null
-    errors.value = []
-    emit('changed')
-  } catch (error) {
-    showError(error)
-  }
-}
-
-async function remove(category: Category) {
-  if (!confirm(`Excluir "${category.name}"? As tarefas dessa categoria também serão excluídas.`)) return
+async function saveEdit() {
+  if (!editing.value) return
+  busy.value = true
 
   try {
-    await categoriesApi.remove(category.id)
-    errors.value = []
+    await categoriesApi.update(editing.value.id, editName.value.trim())
+    editing.value = null
     emit('changed')
   } catch (error) {
-    showError(error)
+    editErrors.value = errorsFrom(error)
+  } finally {
+    busy.value = false
   }
 }
+
+function openDelete(category: Category) {
+  deleting.value = category
+  confirmText.value = ''
+  deleteError.value = ''
+}
+
+async function confirmDelete() {
+  if (!deleting.value || !canDelete.value) return
+  busy.value = true
+
+  try {
+    await categoriesApi.remove(deleting.value.id)
+    deleting.value = null
+    emit('changed')
+  } catch (error) {
+    deleteError.value = errorsFrom(error).join(', ')
+  } finally {
+    busy.value = false
+  }
+}
+
+function closeModals() {
+  editing.value = null
+  deleting.value = null
+}
+
+function onKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') closeModals()
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
   <header class="page-header">
     <div>
       <h1>Categorias</h1>
-      <p class="muted">Agrupe suas tarefas por assunto.</p>
+      <p class="muted">
+        {{ categories.length }} {{ categories.length === 1 ? 'categoria' : 'categorias' }} ·
+        {{ allTasks.length }} {{ allTasks.length === 1 ? 'tarefa' : 'tarefas' }} no total
+      </p>
     </div>
+
+    <form class="cat-form" @submit.prevent="create">
+      <input v-model="newName" placeholder="Nome da nova categoria" />
+      <button type="submit" class="primary" :disabled="busy">+ Adicionar</button>
+    </form>
   </header>
 
-  <section class="panel">
-    <form class="row" @submit.prevent="create">
-      <input v-model="newName" class="fill" placeholder="Nome da nova categoria" />
-      <button type="submit" class="primary">Adicionar</button>
-    </form>
+  <ul v-if="createErrors.length" class="errors">
+    <li v-for="message in createErrors" :key="message">{{ message }}</li>
+  </ul>
 
-    <ul v-if="errors.length" class="errors">
-      <li v-for="message in errors" :key="message">{{ message }}</li>
-    </ul>
+  <p v-if="!categories.length" class="cat-empty">Nenhuma categoria ainda. Crie a primeira no campo acima.</p>
 
-    <p v-if="!categories.length" class="muted">Nenhuma categoria ainda. Crie a primeira acima.</p>
-
-    <ul>
-      <li v-for="category in categories" :key="category.id" class="category-row">
-        <template v-if="editingId === category.id">
-          <input v-model="editingName" class="fill" @keyup.enter="saveEdit(category.id)" />
-          <button type="button" class="small primary" @click="saveEdit(category.id)">Salvar</button>
-          <button type="button" class="small" @click="editingId = null">Cancelar</button>
-        </template>
-        <template v-else>
-          <span class="dot" :style="{ background: categoryColor(category.id) }"></span>
-          <span class="fill">{{ category.name }}</span>
-          <span class="muted">{{ countFor(category.id) }} tarefa(s)</span>
-          <button type="button" class="small" @click="startEdit(category)">Editar</button>
-          <button type="button" class="small danger" @click="remove(category)">Excluir</button>
-        </template>
-      </li>
-    </ul>
+  <section class="cat-grid">
+    <CategoryCard
+      v-for="category in categories"
+      :key="category.id"
+      :category="category"
+      :total="tasksOf(category.id).length"
+      :done="doneOf(category.id)"
+      @edit="openEdit(category)"
+      @remove="openDelete(category)"
+    />
   </section>
+
+  <div v-if="editing" class="modal-backdrop" @click.self="closeModals">
+    <form class="modal" @submit.prevent="saveEdit">
+      <h2>Editar categoria</h2>
+
+      <div class="field">
+        <label for="edit-name">Nome</label>
+        <input id="edit-name" v-model="editName" autofocus />
+      </div>
+
+      <ul v-if="editErrors.length" class="errors">
+        <li v-for="message in editErrors" :key="message">{{ message }}</li>
+      </ul>
+
+      <div class="modal-actions">
+        <button type="button" @click="closeModals">Cancelar</button>
+        <button type="submit" class="primary" :disabled="busy">Salvar</button>
+      </div>
+    </form>
+  </div>
+
+  <div v-if="deleting" class="modal-backdrop" @click.self="closeModals">
+    <form class="modal" @submit.prevent="confirmDelete">
+      <h2>Excluir "{{ deleting.name }}"?</h2>
+
+      <div class="warn">
+        <template v-if="deletingCount > 0">
+          Esta categoria tem <strong>{{ deletingCount }}</strong>
+          {{ deletingCount === 1 ? 'tarefa' : 'tarefas' }}, que também
+          {{ deletingCount === 1 ? 'será excluída' : 'serão excluídas' }}. Essa ação não pode ser desfeita.
+        </template>
+        <template v-else>Essa categoria não tem tarefas. A ação não pode ser desfeita.</template>
+      </div>
+
+      <div v-if="deletingCount > 0" class="field">
+        <label for="confirm-name">Para confirmar, digite <strong>{{ deleting.name }}</strong></label>
+        <input id="confirm-name" v-model="confirmText" autocomplete="off" autofocus />
+      </div>
+
+      <p v-if="deleteError" class="error">{{ deleteError }}</p>
+
+      <div class="modal-actions">
+        <button type="button" @click="closeModals">Cancelar</button>
+        <button type="submit" class="danger-solid" :disabled="!canDelete || busy">Excluir categoria</button>
+      </div>
+    </form>
+  </div>
 </template>
