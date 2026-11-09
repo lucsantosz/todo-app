@@ -2,6 +2,34 @@
 
 Sistema de controle de tarefas com categorias. Backend em **Ruby on Rails** (API REST) e frontend em **Vue.js 3** (TypeScript).
 
+## Para quem vai avaliar
+
+O projeto roda **localmente**. Leva uns 5 minutos e os dados de exemplo já vêm carregados.
+
+**Você precisa de:** Ruby 3.4+, Node.js 22+ e Git. No Windows, o caminho mais simples é usar o WSL (Ubuntu).
+
+**Terminal 1: backend (API Rails, porta 3000)**
+
+```bash
+git clone https://github.com/lucsantosz/todo-app.git
+cd todo-app/backend
+bundle install
+bin/rails db:prepare
+bin/rails server
+```
+
+**Terminal 2: frontend (Vue, porta 5173)**
+
+```bash
+cd todo-app/frontend
+npm install
+npm run dev
+```
+
+Depois, abra **http://localhost:5173** no navegador. Para encerrar, use `Ctrl + C` em cada terminal.
+
+**O que testar:** criar, editar e excluir categorias e tarefas; filtrar por categoria, status e prioridade; marcar tarefas como concluídas; ver os vencimentos no calendário. Para rodar os testes do backend: `cd backend && bin/rails test`.
+
 ## Funcionalidades
 
 - CRUD completo de **categorias** (nome) e de **tarefas** (título, descrição, status, prioridade e data de vencimento).
@@ -27,7 +55,7 @@ Sistema de controle de tarefas com categorias. Backend em **Ruby on Rails** (API
 Clone o repositório:
 
 ```bash
-git clone git@github.com:lucsantosz/todo-app.git
+git clone https://github.com/lucsantosz/todo-app.git
 cd todo-app
 ```
 
